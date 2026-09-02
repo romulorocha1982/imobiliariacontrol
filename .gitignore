@@ -1,0 +1,19 @@
+node_modules
+dist
+dist-ssr
+.env
+.env.local
+.env.*.local
+*.local
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.netlify
+*.log
+npm-debug.log*
+
+# artefatos de build incremental do TypeScript
+*.tsbuildinfo
+
+# arquivo vazio herdado da pasta original
+COPY IMOBILIARIA.txt
