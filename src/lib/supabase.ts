@@ -17,6 +17,14 @@ export const supabase = createClient<Database>(
   url ?? 'https://placeholder.supabase.co',
   key ?? 'placeholder-key',
   {
+    /**
+     * Projetos novos do Supabase expoem o schema `api` por padrao no Data API.
+     * Nossas tabelas ficam em `public`, entao declaramos explicitamente -- sem
+     * isso o PostgREST procura por `api.imoveis` e devolve PGRST205.
+     */
+    db: {
+      schema: 'public',
+    },
     auth: {
       persistSession: true,
       autoRefreshToken: true,
