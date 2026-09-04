@@ -34,7 +34,7 @@ const FORM_VAZIO: Form = {
 }
 
 export default function Imoveis() {
-  const { pode } = useAuth()
+  const { pode, comTenant } = useAuth()
   const { ok, erro: toastErro } = useToast()
 
   const [lista, setLista] = useState<ImovelCompleto[]>([])
@@ -126,7 +126,7 @@ export default function Imoveis() {
 
     const resposta = editando
       ? await supabase.from('imoveis').update(payload).eq('id', editando.id)
-      : await supabase.from('imoveis').insert(payload)
+      : await supabase.from('imoveis').insert(comTenant(payload))
 
     setSalvando(false)
 

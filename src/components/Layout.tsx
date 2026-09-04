@@ -2,7 +2,8 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Building2, Users, UserRound, FileText, Wallet,
-  Target, ShieldCheck, ScrollText, LogOut, Menu, Sun, Moon, Home,
+  Target, ShieldCheck, ScrollText, LogOut, Menu, Sun, Moon, Home, Landmark,
+  KeyRound,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { LABEL_CARGO, type UserRole } from '@/lib/types'
@@ -32,6 +33,11 @@ const MENU: ItemMenu[] = [
     cargos: ['admin'] },
   { para: '/auditoria',     rotulo: 'Auditoria',     icone: <ScrollText size={17} />,  grupo: 'Administracao',
     cargos: ['admin', 'gerente'] },
+
+  // Unico item do super admin. Ele nao ve nenhum dos anteriores - nem no menu,
+  // nem como rota montada (ver App.tsx).
+  { para: '/admin/imobiliarias', rotulo: 'Imobiliarias', icone: <Landmark size={17} />, grupo: 'Plataforma',
+    cargos: ['super_admin'] },
 ]
 
 const TITULOS: Record<string, { titulo: string; sub: string }> = {
@@ -44,6 +50,7 @@ const TITULOS: Record<string, { titulo: string; sub: string }> = {
   '/crm':           { titulo: 'CRM / Funil',        sub: 'Negociacoes em andamento' },
   '/usuarios':      { titulo: 'Usuarios',           sub: 'Equipe e permissoes' },
   '/auditoria':     { titulo: 'Auditoria',          sub: 'Historico de alteracoes' },
+  '/admin/imobiliarias': { titulo: 'Imobiliarias',  sub: 'Contas atendidas pela plataforma' },
 }
 
 type Tema = 'claro' | 'escuro' | 'sistema'
@@ -79,7 +86,7 @@ function usarTema() {
 }
 
 export default function Layout({ children }: { children: ReactNode }) {
-  const { perfil, sair } = useAuth()
+  const { perfil, imobiliaria, ehSuperAdmin, sair } = useAuth()
   const local = useLocation()
   const [menuAberto, setMenuAberto] = useState(false)
   const { escuroAtivo, alternar } = usarTema()
@@ -89,9 +96,12 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   const cabecalho = TITULOS[local.pathname] ?? { titulo: 'Imobiliaria Control', sub: '' }
 
-  const visiveis = MENU.filter(
-    (m) => !m.cargos || (perfil && m.cargos.includes(perfil.cargo)),
-  )
+  const visiveis = MENU.filter((m) => {
+    if (!perfil) return false
+    // O super admin so ve o que e explicitamente dele: nenhuma tela operacional.
+    if (ehSuperAdmin) return m.cargos?.includes('super_admin') ?? false
+    return !m.cargos || m.cargos.includes(perfil.cargo)
+  })
   const grupos = [...new Set(visiveis.map((m) => m.grupo))]
 
   return (
@@ -105,7 +115,9 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
           <div style={{ minWidth: 0 }}>
             <div className="nav__titulo">Imobiliaria Control</div>
-            <div className="nav__sub">Gestao completa</div>
+            <div className="nav__sub">
+              {ehSuperAdmin ? 'Plataforma' : imobiliaria?.nome ?? 'Gestao completa'}
+            </div>
           </div>
         </div>
 
@@ -133,6 +145,28 @@ export default function Layout({ children }: { children: ReactNode }) {
         </div>
 
         <div className="nav__rodape">
+          {/* O codigo fica a mao porque e o que o admin repassa a equipe e o que
+              todo mundo digita no login. */}
+          {imobiliaria && (
+            <button
+              type="button"
+              onClick={() => void navigator.clipboard?.writeText(imobiliaria.codigo)}
+              title="Copiar o codigo de acesso da imobiliaria"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+                padding: '7px 8px', marginBottom: 6, borderRadius: 8,
+                border: '1px solid rgba(255,255,255,.09)', background: 'transparent',
+                color: '#94a3b8', font: 'inherit', fontSize: 11, cursor: 'pointer',
+              }}
+            >
+              <KeyRound size={13} />
+              <span>Codigo</span>
+              <strong style={{ marginLeft: 'auto', color: '#e2e8f0', letterSpacing: '.12em' }}>
+                {imobiliaria.codigo}
+              </strong>
+            </button>
+          )}
+
           <div className="nav__usuario">
             <div className="nav__avatar">{iniciais(perfil?.nome ?? '?')}</div>
             <div style={{ minWidth: 0, flex: 1 }}>

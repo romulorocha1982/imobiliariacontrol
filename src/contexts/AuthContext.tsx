@@ -4,36 +4,47 @@ import {
 } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
-import type { Profile, UserRole } from '@/lib/types'
+import type { Imobiliaria, PerfilCompleto, UserRole } from '@/lib/types'
 
-interface DadosCadastro {
-  nome: string
-  telefone?: string
-}
+/** Onde guardamos o codigo da imobiliaria para pre-preencher o proximo login. */
+const CHAVE_CODIGO = 'codigo_imobiliaria'
 
 interface AuthCtx {
   session: Session | null
-  perfil: Profile | null
+  perfil: PerfilCompleto | null
+  /** A imobiliaria do usuario logado. null para o super admin. */
+  imobiliaria: Imobiliaria | null
+  ehSuperAdmin: boolean
   carregando: boolean
-  entrar: (email: string, senha: string) => Promise<{ erro: string | null }>
-  cadastrar: (
+  entrar: (
     email: string,
     senha: string,
-    dados: DadosCadastro,
-  ) => Promise<{ erro: string | null; confirmar: boolean }>
+    codigo: string,
+  ) => Promise<{ erro: string | null }>
   recuperarSenha: (email: string) => Promise<{ erro: string | null }>
   sair: () => Promise<void>
   recarregarPerfil: () => Promise<void>
   /** O usuario tem algum dos cargos informados? */
   pode: (...cargos: UserRole[]) => boolean
+  /** Carimba o payload com a imobiliaria do usuario. Use em TODO insert. */
+  comTenant: <T extends object>(dados: T) => T & { imobiliaria_id: string }
 }
 
 const Ctx = createContext<AuthCtx | null>(null)
 
+/** Codigo da imobiliaria lembrado do ultimo login bem-sucedido. */
+export function codigoLembrado(): string {
+  try {
+    return localStorage.getItem(CHAVE_CODIGO) ?? ''
+  } catch {
+    return ''
+  }
+}
+
 /** Traduz as mensagens de erro do Supabase Auth */
 function traduzirErro(msg: string): string {
   const m = msg.toLowerCase()
-  if (m.includes('invalid login credentials')) return 'E-mail ou senha incorretos.'
+  if (m.includes('invalid login credentials')) return 'E-mail, senha ou codigo da imobiliaria incorretos.'
   if (m.includes('email not confirmed')) return 'Confirme seu e-mail antes de entrar. Verifique a caixa de entrada.'
   if (m.includes('user already registered')) return 'Este e-mail ja possui cadastro.'
   if (m.includes('password should be at least')) return 'A senha precisa ter no minimo 6 caracteres.'
@@ -49,13 +60,15 @@ function traduzirErro(msg: string): string {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
-  const [perfil, setPerfil] = useState<Profile | null>(null)
+  const [perfil, setPerfil] = useState<PerfilCompleto | null>(null)
   const [carregando, setCarregando] = useState(true)
 
-  async function buscarPerfil(userId: string): Promise<Profile | null> {
+  // Traz a imobiliaria junto, numa unica requisicao. O embed depende da
+  // Relationship profiles -> imobiliarias declarada em lib/types.ts.
+  async function buscarPerfil(userId: string): Promise<PerfilCompleto | null> {
     const { data, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select('*, imobiliaria:imobiliarias(*)')
       .eq('id', userId)
       .maybeSingle()
 
@@ -63,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Erro ao carregar perfil:', error.message)
       return null
     }
-    return data as Profile | null
+    return data as PerfilCompleto | null
   }
 
   useEffect(() => {
@@ -100,28 +113,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       session,
       perfil,
+      imobiliaria: perfil?.imobiliaria ?? null,
+      ehSuperAdmin: perfil?.cargo === 'super_admin',
       carregando,
 
-      async entrar(email, senha) {
-        const { error } = await supabase.auth.signInWithPassword({
+      /**
+       * Login com e-mail, senha e o codigo de 6 digitos da imobiliaria.
+       *
+       * O codigo e conferido DEPOIS do signInWithPassword, porque o Supabase
+       * Auth nao tem como valida-lo antes de emitir a sessao. Isso significa que
+       * ele e uma barreira de interface, nao de servidor: quem chamar a API
+       * direto pula esta tela. Assumido de proposito -
+       *   - o que isola os dados de verdade e a RLS, no banco;
+       *   - a barreira REAL do codigo esta no cadastro, validada em
+       *     handle_new_user() (004_multitenancy.sql).
+       * Aqui ele serve de UX e de tranca contra credencial vazada nas maos de
+       * quem nao sabe o codigo.
+       *
+       * Nao existe RPC anonima de validacao de codigo de proposito: sao 900 mil
+       * combinacoes e o PostgREST anonimo nao tem rate limit por RPC - um script
+       * varreria o espaco inteiro e sairia com a credencial de cadastro de todas
+       * as imobiliarias.
+       */
+      async entrar(email, senha, codigo) {
+        const { data, error } = await supabase.auth.signInWithPassword({
           email: email.trim().toLowerCase(),
           password: senha,
         })
-        return { erro: error ? traduzirErro(error.message) : null }
-      },
+        if (error) return { erro: traduzirErro(error.message) }
+        if (!data.user) return { erro: 'Nao foi possivel entrar. Tente novamente.' }
 
-      async cadastrar(email, senha, dados) {
-        const { data, error } = await supabase.auth.signUp({
-          email: email.trim().toLowerCase(),
-          password: senha,
-          options: {
-            data: { nome: dados.nome, telefone: dados.telefone ?? null },
-            emailRedirectTo: window.location.origin,
-          },
-        })
-        if (error) return { erro: traduzirErro(error.message), confirmar: false }
-        // Sem sessao = o projeto exige confirmacao por e-mail
-        return { erro: null, confirmar: !data.session }
+        const { data: p } = await supabase
+          .from('profiles')
+          .select('cargo, imobiliaria:imobiliarias(codigo, ativa)')
+          .eq('id', data.user.id)
+          .maybeSingle()
+
+        // O super admin nao pertence a nenhuma imobiliaria: entra sem codigo.
+        if (p?.cargo === 'super_admin') return { erro: null }
+
+        const imob = p?.imobiliaria as { codigo: string; ativa: boolean } | null
+
+        if (!imob || imob.codigo !== codigo.replace(/\D/g, '')) {
+          await supabase.auth.signOut()
+          // Mensagem unica de proposito: nao revela qual dos tres errou.
+          return { erro: 'E-mail, senha ou codigo da imobiliaria incorretos.' }
+        }
+
+        if (!imob.ativa) {
+          await supabase.auth.signOut()
+          return { erro: 'O acesso desta imobiliaria esta suspenso. Fale com o suporte.' }
+        }
+
+        try {
+          localStorage.setItem(CHAVE_CODIGO, imob.codigo)
+        } catch {
+          // navegador sem storage: so perde o pre-preenchimento
+        }
+        return { erro: null }
       },
 
       async recuperarSenha(email) {
@@ -145,6 +194,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       pode(...cargos) {
         if (!perfil?.ativo) return false
         return cargos.includes(perfil.cargo)
+      },
+
+      comTenant(dados) {
+        if (!perfil?.imobiliaria_id) {
+          throw new Error('Sessao sem imobiliaria definida')
+        }
+        return { ...dados, imobiliaria_id: perfil.imobiliaria_id }
       },
     }),
     [session, perfil, carregando],

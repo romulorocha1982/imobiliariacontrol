@@ -39,7 +39,7 @@ function formVazio(): Form {
 }
 
 export default function Contratos() {
-  const { pode } = useAuth()
+  const { pode, comTenant } = useAuth()
   const { ok, erro: toastErro, toast } = useToast()
 
   const [lista, setLista] = useState<ContratoCompleto[]>([])
@@ -151,7 +151,7 @@ export default function Contratos() {
 
     const resposta = editando
       ? await supabase.from('contratos').update(dados).eq('id', editando.id)
-      : await supabase.from('contratos').insert(dados).select('id').single()
+      : await supabase.from('contratos').insert(comTenant(dados)).select('id').single()
 
     setSalvando(false)
     if (resposta.error) return toastErro('Nao foi possivel salvar', resposta.error.message)

@@ -31,7 +31,7 @@ function formVazio(tipo: LancamentoTipo): Form {
 }
 
 export default function Financeiro() {
-  const { pode } = useAuth()
+  const { pode, comTenant } = useAuth()
   const { ok, erro: toastErro } = useToast()
 
   const [lista, setLista] = useState<LancamentoCompleto[]>([])
@@ -201,7 +201,7 @@ export default function Financeiro() {
 
     const resposta = editando
       ? await supabase.from('lancamentos').update(dados).eq('id', editando.id)
-      : await supabase.from('lancamentos').insert(dados)
+      : await supabase.from('lancamentos').insert(comTenant(dados))
 
     setSalvando(false)
     if (resposta.error) return toastErro('Nao foi possivel salvar', resposta.error.message)

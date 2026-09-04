@@ -3,20 +3,18 @@ import {
   Home, Eye, EyeOff, AlertCircle, CheckCircle2, Building2,
   Wallet, Target, FileText,
 } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth, codigoLembrado } from '@/contexts/AuthContext'
 import { Campo } from '@/components/ui'
-import { mascaraTelefone } from '@/lib/format'
 
-type Modo = 'entrar' | 'cadastrar' | 'recuperar'
+type Modo = 'entrar' | 'recuperar'
 
 export default function Login() {
-  const { entrar, cadastrar, recuperarSenha } = useAuth()
+  const { entrar, recuperarSenha } = useAuth()
 
   const [modo, setModo] = useState<Modo>('entrar')
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
-  const [nome, setNome] = useState('')
-  const [telefone, setTelefone] = useState('')
+  const [codigo, setCodigo] = useState(codigoLembrado)
   const [verSenha, setVerSenha] = useState(false)
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState('')
@@ -49,26 +47,8 @@ export default function Login() {
 
     if (senha.length < 6) return setErro('A senha precisa ter no minimo 6 caracteres.')
 
-    if (modo === 'cadastrar') {
-      if (nome.trim().length < 3) return setErro('Informe seu nome completo.')
-
-      setEnviando(true)
-      const { erro: err, confirmar } = await cadastrar(email, senha, {
-        nome: nome.trim(),
-        telefone: telefone || undefined,
-      })
-      setEnviando(false)
-
-      if (err) return setErro(err)
-      if (confirmar) {
-        setSucesso('Cadastro criado. Confirme o e-mail que enviamos para poder entrar.')
-        setModo('entrar')
-      }
-      return
-    }
-
     setEnviando(true)
-    const { erro: err } = await entrar(email, senha)
+    const { erro: err } = await entrar(email, senha, codigo)
     setEnviando(false)
     if (err) setErro(err)
   }
@@ -76,13 +56,8 @@ export default function Login() {
   const titulos: Record<Modo, { titulo: string; sub: string; botao: string }> = {
     entrar: {
       titulo: 'Bem-vindo de volta',
-      sub: 'Entre com suas credenciais para acessar o sistema.',
+      sub: 'Entre com suas credenciais e o codigo da sua imobiliaria.',
       botao: 'Entrar',
-    },
-    cadastrar: {
-      titulo: 'Criar conta',
-      sub: 'O primeiro usuario cadastrado vira administrador do sistema.',
-      botao: 'Criar conta',
     },
     recuperar: {
       titulo: 'Recuperar senha',
@@ -159,30 +134,6 @@ export default function Login() {
               </div>
             )}
 
-            {modo === 'cadastrar' && (
-              <>
-                <Campo rotulo="Nome completo" obrigatorio>
-                  <input
-                    className="input"
-                    value={nome}
-                    onChange={(e) => setNome(e.target.value)}
-                    placeholder="Maria Silva"
-                    autoComplete="name"
-                  />
-                </Campo>
-                <Campo rotulo="Telefone">
-                  <input
-                    className="input"
-                    value={telefone}
-                    onChange={(e) => setTelefone(mascaraTelefone(e.target.value))}
-                    placeholder="(11) 98888-7777"
-                    inputMode="tel"
-                    autoComplete="tel"
-                  />
-                </Campo>
-              </>
-            )}
-
             <Campo rotulo="E-mail" obrigatorio>
               <input
                 className="input"
@@ -195,43 +146,56 @@ export default function Login() {
               />
             </Campo>
 
-            {modo !== 'recuperar' && (
-              <Campo
-                rotulo="Senha"
-                obrigatorio
-                dica={modo === 'cadastrar' ? 'Minimo de 6 caracteres.' : undefined}
-              >
-                <div className="senha-wrap">
+            {modo === 'entrar' && (
+              <>
+                <Campo rotulo="Senha" obrigatorio>
+                  <div className="senha-wrap">
+                    <input
+                      className="input"
+                      type={verSenha ? 'text' : 'password'}
+                      value={senha}
+                      onChange={(e) => setSenha(e.target.value)}
+                      placeholder="••••••••"
+                      autoComplete="current-password"
+                    />
+                    <button
+                      type="button"
+                      className="senha-olho"
+                      onClick={() => setVerSenha((v) => !v)}
+                      aria-label={verSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                    >
+                      {verSenha ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </Campo>
+
+                <Campo
+                  rotulo="Codigo da imobiliaria"
+                  obrigatorio
+                  dica="Os 6 digitos que o administrador da sua imobiliaria informou."
+                >
                   <input
                     className="input"
-                    type={verSenha ? 'text' : 'password'}
-                    value={senha}
-                    onChange={(e) => setSenha(e.target.value)}
-                    placeholder="••••••••"
-                    autoComplete={modo === 'cadastrar' ? 'new-password' : 'current-password'}
+                    value={codigo}
+                    onChange={(e) => setCodigo(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="000000"
+                    inputMode="numeric"
+                    maxLength={6}
+                    autoComplete="off"
+                    style={{ letterSpacing: '.35em', textAlign: 'center', fontSize: 16 }}
                   />
+                </Campo>
+
+                <div style={{ textAlign: 'right', marginTop: -4 }}>
                   <button
                     type="button"
-                    className="senha-olho"
-                    onClick={() => setVerSenha((v) => !v)}
-                    aria-label={verSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                    className="btn btn--fantasma btn--sm"
+                    onClick={() => trocarModo('recuperar')}
                   >
-                    {verSenha ? <EyeOff size={16} /> : <Eye size={16} />}
+                    Esqueci minha senha
                   </button>
                 </div>
-              </Campo>
-            )}
-
-            {modo === 'entrar' && (
-              <div style={{ textAlign: 'right', marginTop: -4 }}>
-                <button
-                  type="button"
-                  className="btn btn--fantasma btn--sm"
-                  onClick={() => trocarModo('recuperar')}
-                >
-                  Esqueci minha senha
-                </button>
-              </div>
+              </>
             )}
 
             <button
@@ -246,19 +210,11 @@ export default function Login() {
           </form>
 
           <div className="login__troca">
-            {modo === 'entrar' && (
-              <>
-                Ainda nao tem conta?{' '}
-                <button onClick={() => trocarModo('cadastrar')}>Criar agora</button>
-              </>
-            )}
-            {modo === 'cadastrar' && (
-              <>
-                Ja tem cadastro?{' '}
-                <button onClick={() => trocarModo('entrar')}>Fazer login</button>
-              </>
-            )}
-            {modo === 'recuperar' && (
+            {modo === 'entrar' ? (
+              // Nao ha mais autocadastro: quem cria os acessos e o administrador
+              // da imobiliaria, pela tela Usuarios.
+              <>Nao tem acesso? Peca ao administrador da sua imobiliaria para criar o seu usuario.</>
+            ) : (
               <button onClick={() => trocarModo('entrar')}>Voltar para o login</button>
             )}
           </div>

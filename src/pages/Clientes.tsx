@@ -14,7 +14,7 @@ type Form = Partial<Cliente>
 const FORM_VAZIO: Form = { nome: '', tipo: 'interessado', ativo: true }
 
 export default function Clientes() {
-  const { pode } = useAuth()
+  const { pode, comTenant } = useAuth()
   const { ok, erro: toastErro } = useToast()
 
   const [lista, setLista] = useState<Cliente[]>([])
@@ -90,7 +90,7 @@ export default function Clientes() {
 
     const resposta = editando
       ? await supabase.from('clientes').update(payload).eq('id', editando.id)
-      : await supabase.from('clientes').insert(payload)
+      : await supabase.from('clientes').insert(comTenant(payload))
 
     setSalvando(false)
     if (resposta.error) return toastErro('Nao foi possivel salvar', resposta.error.message)

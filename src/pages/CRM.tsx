@@ -28,7 +28,7 @@ const ORIGENS = [
 ]
 
 export default function CRM() {
-  const { pode, perfil } = useAuth()
+  const { pode, perfil, comTenant } = useAuth()
   const { ok, erro: toastErro } = useToast()
 
   const [lista, setLista] = useState<NegociacaoLinha[]>([])
@@ -56,11 +56,15 @@ export default function CRM() {
     const [r1, r2, r3, r4] = await Promise.all([
       supabase
         .from('negociacoes')
+        // A chave estrangeira e citada explicitamente porque negociacoes tem mais
+        // de um caminho para cada uma dessas tabelas (a coluna em si, o
+        // created_by e a chave composta de tenant do 005). Sem o apelido da FK,
+        // o PostgREST recusa o embed com PGRST201 - ambiguous relationship.
         .select(`
           *,
-          cliente:clientes ( nome, telefone ),
-          imovel:imoveis ( codigo, titulo ),
-          corretor:profiles ( nome )
+          cliente:clientes!negociacoes_cliente_id_fkey ( nome, telefone ),
+          imovel:imoveis!negociacoes_imovel_id_fkey ( codigo, titulo ),
+          corretor:profiles!negociacoes_corretor_id_fkey ( nome )
         `)
         .order('updated_at', { ascending: false }),
       supabase.from('clientes').select('*').eq('ativo', true).order('nome'),
@@ -193,7 +197,7 @@ export default function CRM() {
 
     const resposta = editando
       ? await supabase.from('negociacoes').update(dados).eq('id', editando.id)
-      : await supabase.from('negociacoes').insert(dados)
+      : await supabase.from('negociacoes').insert(comTenant(dados))
 
     setSalvando(false)
     if (resposta.error) return toastErro('Nao foi possivel salvar', resposta.error.message)

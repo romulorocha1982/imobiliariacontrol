@@ -12,7 +12,7 @@ type Form = Partial<Proprietario>
 const FORM_VAZIO: Form = { nome: '', ativo: true }
 
 export default function Proprietarios() {
-  const { pode } = useAuth()
+  const { pode, comTenant } = useAuth()
   const { ok, erro: toastErro } = useToast()
 
   const [lista, setLista] = useState<Proprietario[]>([])
@@ -96,7 +96,7 @@ export default function Proprietarios() {
 
     const resposta = editando
       ? await supabase.from('proprietarios').update(payload).eq('id', editando.id)
-      : await supabase.from('proprietarios').insert(payload)
+      : await supabase.from('proprietarios').insert(comTenant(payload))
 
     setSalvando(false)
     if (resposta.error) return toastErro('Nao foi possivel salvar', resposta.error.message)

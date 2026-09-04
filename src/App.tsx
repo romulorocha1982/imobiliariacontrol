@@ -13,8 +13,9 @@ import Financeiro from '@/pages/Financeiro'
 import CRM from '@/pages/CRM'
 import Usuarios from '@/pages/Usuarios'
 import Auditoria from '@/pages/Auditoria'
+import AdminImobiliarias from '@/pages/AdminImobiliarias'
 import { Carregando, Vazio } from '@/components/ui'
-import { ShieldAlert, PlugZap } from 'lucide-react'
+import { ShieldAlert, PlugZap, PauseCircle } from 'lucide-react'
 
 /** Tela mostrada quando o .env ainda nao foi preenchido */
 function FaltaConfigurar() {
@@ -65,7 +66,7 @@ function Restrito({ cargos, children }: { cargos: UserRole[]; children: React.Re
 }
 
 export default function App() {
-  const { session, perfil, carregando } = useAuth()
+  const { session, perfil, imobiliaria, ehSuperAdmin, carregando } = useAuth()
 
   if (!supabaseConfigurado) return <FaltaConfigurar />
 
@@ -98,6 +99,27 @@ export default function App() {
   // Conta desativada por um administrador
   if (!perfil.ativo) {
     return <ContaDesativada />
+  }
+
+  // O super admin gerencia contas de imobiliaria e nada mais. As telas
+  // operacionais nao sao sequer montadas para ele - o requisito de LGPD fica
+  // implementado tambem aqui, nao so na RLS.
+  if (ehSuperAdmin) {
+    return (
+      <Layout>
+        <Routes>
+          <Route path="/admin/imobiliarias" element={<AdminImobiliarias />} />
+          <Route path="*" element={<Navigate to="/admin/imobiliarias" replace />} />
+        </Routes>
+      </Layout>
+    )
+  }
+
+  // Imobiliaria suspensa pelo administrador da plataforma.
+  // Sem esta tela, minha_imobiliaria() devolveria NULL e TODAS as listas
+  // voltariam vazias, sem nenhuma explicacao para o usuario.
+  if (imobiliaria && !imobiliaria.ativa) {
+    return <ImobiliariaSuspensa />
   }
 
   return (
@@ -137,6 +159,28 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>
+  )
+}
+
+function ImobiliariaSuspensa() {
+  const { sair, imobiliaria } = useAuth()
+  return (
+    <div style={{ display: 'grid', placeItems: 'center', minHeight: '100vh', padding: 24 }}>
+      <div className="card" style={{ maxWidth: 430 }}>
+        <div className="card__corpo">
+          <Vazio
+            icone={<PauseCircle size={24} />}
+            titulo="Acesso suspenso"
+            texto={`O acesso da ${imobiliaria?.nome ?? 'sua imobiliaria'} esta suspenso no momento. Nenhum dado foi perdido: assim que a situacao for regularizada, tudo volta como estava. Fale com o suporte do Imobiliaria Control.`}
+            acao={
+              <button className="btn btn--secundario" onClick={() => void sair()}>
+                Sair
+              </button>
+            }
+          />
+        </div>
+      </div>
+    </div>
   )
 }
 

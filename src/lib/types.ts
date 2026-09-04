@@ -1,6 +1,14 @@
 /** Tipos do dominio - espelham o schema em supabase/migrations/001_schema.sql */
 
-export type UserRole = 'admin' | 'gerente' | 'corretor' | 'financeiro'
+/**
+ * `super_admin` e o dono da plataforma. Por desenho ele NAO enxerga dado
+ * operacional de nenhuma imobiliaria: seu `imobiliaria_id` e null, e como toda
+ * policy compara `imobiliaria_id = minha_imobiliaria()`, nenhuma linha casa.
+ */
+export type UserRole = 'admin' | 'gerente' | 'corretor' | 'financeiro' | 'super_admin'
+
+/** Cargos que existem dentro de uma imobiliaria (exclui o super admin). */
+export const CARGOS_EQUIPE: UserRole[] = ['admin', 'gerente', 'corretor', 'financeiro']
 
 export type ImovelTipo =
   | 'apartamento' | 'casa' | 'sobrado' | 'kitnet' | 'terreno'
@@ -33,8 +41,38 @@ export type NegociacaoEtapa =
 // Registros
 // -----------------------------------------------------------------------------
 
+/** A imobiliaria e o tenant: e ela que isola os dados de um cliente do outro. */
+export type Imobiliaria = {
+  id: string
+  nome: string
+  razao_social: string | null
+  cpf_cnpj: string | null
+  /** Codigo de acesso de 6 digitos, usado no login e no cadastro da equipe. */
+  codigo: string
+  email: string | null
+  telefone: string | null
+  cidade: string | null
+  estado: string | null
+  plano: string
+  ativa: boolean
+  observacoes: string | null
+  created_at: string
+  updated_at: string
+}
+
+/** Retorno de painel_imobiliarias(): so agregados, nenhuma linha operacional. */
+export type PainelImobiliaria = Omit<Imobiliaria, 'observacoes' | 'updated_at'> & {
+  total_usuarios: number
+  total_imoveis: number
+  total_contratos_ativos: number
+  /** Ultimo login de qualquer usuario da imobiliaria. */
+  ultimo_acesso: string | null
+}
+
 export type Profile = {
   id: string
+  /** null apenas para super_admin - garantido pelo check profiles_tenant_coerente */
+  imobiliaria_id: string | null
   nome: string
   email: string | null
   telefone: string | null
@@ -44,6 +82,11 @@ export type Profile = {
   avatar_url: string | null
   created_at: string
   updated_at: string
+}
+
+/** Perfil com a imobiliaria embutida - o que o AuthContext carrega no login. */
+export type PerfilCompleto = Profile & {
+  imobiliaria: Imobiliaria | null
 }
 
 type Endereco = {
@@ -58,6 +101,7 @@ type Endereco = {
 
 export type Proprietario = Endereco & {
   id: string
+  imobiliaria_id: string
   nome: string
   cpf_cnpj: string | null
   rg: string | null
@@ -78,6 +122,8 @@ export type Proprietario = Endereco & {
 
 export type Imovel = Endereco & {
   id: string
+  imobiliaria_id: string
+  /** Unico dentro da imobiliaria, nao globalmente: A e B tem seu proprio IM-0001 */
   codigo: string | null
   titulo: string
   tipo: ImovelTipo
@@ -117,6 +163,7 @@ export type ImovelCompleto = Imovel & {
 
 export type ImovelFoto = {
   id: string
+  imobiliaria_id: string
   imovel_id: string
   url: string
   path: string | null
@@ -127,6 +174,7 @@ export type ImovelFoto = {
 
 export type Cliente = Endereco & {
   id: string
+  imobiliaria_id: string
   nome: string
   tipo: ClienteTipo
   cpf_cnpj: string | null
@@ -147,6 +195,8 @@ export type Cliente = Endereco & {
 
 export type Contrato = {
   id: string
+  imobiliaria_id: string
+  /** Unico dentro da imobiliaria: cada uma tem seu proprio CT-2026-0001 */
   numero: string | null
   imovel_id: string
   inquilino_id: string
@@ -187,6 +237,7 @@ export type ContratoCompleto = Contrato & {
 
 export type Lancamento = {
   id: string
+  imobiliaria_id: string
   tipo: LancamentoTipo
   categoria: LancamentoCategoria
   status: LancamentoStatus
@@ -219,6 +270,7 @@ export type LancamentoCompleto = Lancamento & {
 
 export type Negociacao = {
   id: string
+  imobiliaria_id: string
   cliente_id: string
   imovel_id: string | null
   corretor_id: string | null
@@ -241,6 +293,7 @@ export type NegociacaoCompleta = Negociacao & {
 
 export type Visita = {
   id: string
+  imobiliaria_id: string
   negociacao_id: string | null
   imovel_id: string
   cliente_id: string
@@ -254,6 +307,7 @@ export type Visita = {
 
 export type Auditoria = {
   id: number
+  imobiliaria_id: string
   tabela: string
   registro_id: string | null
   acao: string
@@ -298,6 +352,26 @@ type Tabela<Row> = {
   Relationships: []
 }
 
+/**
+ * Tabela multi-tenant: o INSERT EXIGE imobiliaria_id, todo o resto continua
+ * opcional.
+ *
+ * E de proposito que isso incomode. Como o projeto nao tem testes nem lint,
+ * `npm run typecheck` e a unica rede de seguranca automatica - e assim ele
+ * quebra a compilacao se alguem escrever um insert sem o tenant, em vez de o
+ * erro aparecer so em producao como uma linha gravada na imobiliaria errada.
+ *
+ * Use `comTenant()` do AuthContext para preencher.
+ */
+type TabelaTenant<Row extends { imobiliaria_id: string }> = {
+  Row: Row
+  Insert: Partial<Omit<Row, 'imobiliaria_id'>> & Pick<Row, 'imobiliaria_id'>
+  /** As telas mandam o registro inteiro no update; a RLS aprova por ser o mesmo
+   *  tenant, e o trigger trg_proteger_profile barra qualquer troca. */
+  Update: Partial<Row>
+  Relationships: []
+}
+
 type Visao<Row> = {
   Row: Row
   Relationships: []
@@ -306,13 +380,29 @@ type Visao<Row> = {
 export type Database = {
   public: {
     Tables: {
-      profiles: Tabela<Profile>
-      proprietarios: Tabela<Proprietario>
-      imoveis: Tabela<Imovel>
-      imovel_fotos: Tabela<ImovelFoto>
-      clientes: Tabela<Cliente>
-      contratos: Tabela<Contrato>
-      lancamentos: Tabela<Lancamento>
+      imobiliarias: Tabela<Imobiliaria>
+      /** A relacao precisa ser declarada para o embed `imobiliaria:imobiliarias(*)`
+       *  que o AuthContext usa ao carregar o perfil. */
+      profiles: {
+        Row: Profile
+        Insert: Partial<Profile>
+        Update: Partial<Profile>
+        Relationships: [
+          {
+            foreignKeyName: 'profiles_imobiliaria_id_fkey'
+            columns: ['imobiliaria_id']
+            isOneToOne: false
+            referencedRelation: 'imobiliarias'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      proprietarios: TabelaTenant<Proprietario>
+      imoveis: TabelaTenant<Imovel>
+      imovel_fotos: TabelaTenant<ImovelFoto>
+      clientes: TabelaTenant<Cliente>
+      contratos: TabelaTenant<Contrato>
+      lancamentos: TabelaTenant<Lancamento>
       /**
        * As relacoes precisam ser declaradas para o PostgREST tipar os embeds
        * usados no CRM: `cliente:clientes(...)`, `imovel:imoveis(...)`,
@@ -321,7 +411,7 @@ export type Database = {
        */
       negociacoes: {
         Row: Negociacao
-        Insert: Partial<Negociacao>
+        Insert: Partial<Omit<Negociacao, 'imobiliaria_id'>> & Pick<Negociacao, 'imobiliaria_id'>
         Update: Partial<Negociacao>
         Relationships: [
           {
@@ -347,8 +437,8 @@ export type Database = {
           },
         ]
       }
-      visitas: Tabela<Visita>
-      auditoria: Tabela<Auditoria>
+      visitas: TabelaTenant<Visita>
+      auditoria: TabelaTenant<Auditoria>
     }
     Views: {
       vw_imoveis_completo: Visao<ImovelCompleto>
@@ -371,6 +461,11 @@ export type Database = {
       baixar_lancamento: {
         Args: { p_id: string; p_valor?: number; p_data?: string; p_forma?: string }
         Returns: undefined
+      }
+      /** Painel do super admin. Devolve lista vazia para qualquer outro cargo. */
+      painel_imobiliarias: {
+        Args: Record<PropertyKey, never>
+        Returns: PainelImobiliaria[]
       }
     }
     Enums: {
@@ -399,6 +494,7 @@ export const LABEL_CARGO: Record<UserRole, string> = {
   gerente: 'Gerente',
   corretor: 'Corretor',
   financeiro: 'Financeiro',
+  super_admin: 'Administrador da plataforma',
 }
 
 export const LABEL_TIPO_IMOVEL: Record<ImovelTipo, string> = {
