@@ -173,6 +173,18 @@ export type ImovelFoto = {
 }
 
 /**
+ * Retorno de `gerar_parcelas_contrato`. O botao nao apenas cria: ele sincroniza
+ * os lancamentos em aberto com os valores atuais do contrato, e remove o que
+ * deixou de valer -- taxa de administracao zerada, meses que sairam da vigencia.
+ * Lancamento pago ou cancelado nunca entra nessas contas.
+ */
+export type SincronizacaoParcelas = {
+  criados: number
+  atualizados: number
+  removidos: number
+}
+
+/**
  * Tipos de documento aceitos. Espelha o check `documentos_tipo_valido` da
  * migracao 006 -- se acrescentar um aqui, acrescente la tambem.
  */
@@ -490,7 +502,7 @@ export type Database = {
       }
       gerar_parcelas_contrato: {
         Args: { p_contrato_id: string }
-        Returns: number
+        Returns: SincronizacaoParcelas
       }
       marcar_atrasados: {
         Args: Record<PropertyKey, never>

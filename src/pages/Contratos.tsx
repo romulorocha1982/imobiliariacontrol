@@ -175,22 +175,44 @@ export default function Contratos() {
     void carregar()
   }
 
-  /** Chama a funcao do banco que cria aluguel + repasse + taxa de cada mes */
+  /**
+   * Sincroniza o financeiro com o contrato: cria as competencias que faltam,
+   * atualiza as que estao em aberto e remove o que deixou de valer. Nada que ja
+   * foi pago e tocado -- para isso existe estorno, decidido a mao.
+   */
   async function gerarParcelas(contratoId: string, silencioso = false) {
     setGerando(contratoId)
-    const { data: qtd, error } = await supabase.rpc('gerar_parcelas_contrato', {
+    const { data, error } = await supabase.rpc('gerar_parcelas_contrato', {
       p_contrato_id: contratoId,
     })
     setGerando(null)
 
     if (error) return toastErro('Erro ao gerar parcelas', error.message)
 
-    const n = Number(qtd ?? 0)
-    if (n === 0 && !silencioso) {
-      toast('info', 'Nenhuma parcela nova', 'Todas as competencias deste contrato ja foram lancadas.')
-    } else if (n > 0) {
-      ok(`${n} lancamento(s) gerado(s)`, 'Confira no modulo Financeiro.')
+    const criados = Number(data?.criados ?? 0)
+    const atualizados = Number(data?.atualizados ?? 0)
+    const removidos = Number(data?.removidos ?? 0)
+
+    // Cada numero vira uma frase so quando ha o que contar: "0 removidos" num
+    // aviso de sucesso e ruido.
+    const partes = [
+      criados && `${criados} lancamento(s) criado(s)`,
+      atualizados && `${atualizados} atualizado(s)`,
+      removidos && `${removidos} removido(s)`,
+    ].filter(Boolean) as string[]
+
+    if (partes.length === 0) {
+      if (!silencioso) {
+        toast(
+          'info',
+          'Financeiro ja esta em dia',
+          'Os lancamentos deste contrato ja refletem os valores atuais.',
+        )
+      }
+      return
     }
+
+    ok(partes.join(' · '), 'Confira no modulo Financeiro.')
   }
 
   async function confirmarExclusao() {
