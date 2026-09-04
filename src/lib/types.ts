@@ -173,6 +173,33 @@ export type ImovelFoto = {
 }
 
 /**
+ * Modelo de contrato com clausulas editaveis. O texto guarda marcadores
+ * `{{locatario.nome}}`, resolvidos so na hora de gerar -- um modelo com valor
+ * gravado serviria uma vez so.
+ */
+export type ModeloContrato = {
+  id: string
+  imobiliaria_id: string
+  nome: string
+  tipo: 'locacao_residencial' | 'locacao_comercial' | 'venda' | 'outro'
+  cabecalho: string | null
+  clausulas: { titulo: string; texto: string }[]
+  rodape: string | null
+  padrao: boolean
+  ativo: boolean
+  created_at: string
+  updated_at: string
+  created_by: string | null
+}
+
+export const LABEL_TIPO_MODELO: Record<ModeloContrato['tipo'], string> = {
+  locacao_residencial: 'Locacao residencial',
+  locacao_comercial: 'Locacao comercial',
+  venda: 'Venda',
+  outro: 'Outro',
+}
+
+/**
  * Retorno de `gerar_parcelas_contrato`. O botao nao apenas cria: ele sincroniza
  * os lancamentos em aberto com os valores atuais do contrato, e remove o que
  * deixou de valer -- taxa de administracao zerada, meses que sairam da vigencia.
@@ -490,6 +517,7 @@ export type Database = {
       imoveis: TabelaTenant<Imovel>
       imovel_fotos: TabelaTenant<ImovelFoto>
       documentos: TabelaTenant<Documento>
+      modelos_contrato: TabelaTenant<ModeloContrato>
       clientes: TabelaTenant<Cliente>
       contratos: TabelaTenant<Contrato>
       lancamentos: TabelaTenant<Lancamento>
