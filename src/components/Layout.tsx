@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Building2, Users, UserRound, FileText, Wallet,
   Target, ShieldCheck, ScrollText, LogOut, Menu, Sun, Moon, Home, Landmark,
-  KeyRound,
+  KeyRound, LifeBuoy,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { LABEL_CARGO, type UserRole } from '@/lib/types'
@@ -34,6 +34,10 @@ const MENU: ItemMenu[] = [
   { para: '/auditoria',     rotulo: 'Auditoria',     icone: <ScrollText size={17} />,  grupo: 'Administracao',
     cargos: ['admin', 'gerente'] },
 
+  // Fica por ultimo de proposito: ajuda se procura quando ja se esta perdido,
+  // e o fim do menu e onde a mao vai. Vale para todos os cargos.
+  { para: '/ajuda',         rotulo: 'Como usar',     icone: <LifeBuoy size={17} />,    grupo: 'Ajuda' },
+
   // Unico item do super admin. Ele nao ve nenhum dos anteriores - nem no menu,
   // nem como rota montada (ver App.tsx).
   { para: '/admin/imobiliarias', rotulo: 'Imobiliarias', icone: <Landmark size={17} />, grupo: 'Plataforma',
@@ -50,6 +54,7 @@ const TITULOS: Record<string, { titulo: string; sub: string }> = {
   '/crm':           { titulo: 'CRM / Funil',        sub: 'Negociacoes em andamento' },
   '/usuarios':      { titulo: 'Usuarios',           sub: 'Equipe e permissoes' },
   '/auditoria':     { titulo: 'Auditoria',          sub: 'Historico de alteracoes' },
+  '/ajuda':         { titulo: 'Como usar o sistema', sub: 'Guia rapido e perguntas frequentes' },
   '/admin/imobiliarias': { titulo: 'Imobiliarias',  sub: 'Contas atendidas pela plataforma' },
 }
 

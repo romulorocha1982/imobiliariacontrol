@@ -14,6 +14,7 @@ import CRM from '@/pages/CRM'
 import Usuarios from '@/pages/Usuarios'
 import Auditoria from '@/pages/Auditoria'
 import AdminImobiliarias from '@/pages/AdminImobiliarias'
+import Ajuda from '@/pages/Ajuda'
 import { Carregando, Vazio } from '@/components/ui'
 import { ShieldAlert, PlugZap, PauseCircle } from 'lucide-react'
 
@@ -155,6 +156,9 @@ export default function App() {
             </Restrito>
           }
         />
+        {/* Sem Restrito: a ajuda vale para todos os cargos, e o conteudo dela
+            ja explica o que cada um pode fazer. */}
+        <Route path="/ajuda" element={<Ajuda />} />
         <Route path="/login" element={<Navigate to="/" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

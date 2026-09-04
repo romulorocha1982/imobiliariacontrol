@@ -927,6 +927,96 @@ button, input, select, textarea { font: inherit; color: inherit; }
   .galeria__acoes { opacity: 1; }
 }
 
+/* ------------------------------------------------------------- AJUDA -- */
+/* A coluna da esquerda (a sequencia) e mais alta que os cards da direita;
+   `align-items: start` impede que os de cima estiquem para acompanhar. */
+.ajuda-grade { align-items: start; }
+
+@media (max-width: 900px) {
+  .ajuda-grade { grid-template-columns: 1fr; }
+}
+
+/* Numeracao com fio ligando um passo ao seguinte. Aqui a ordem e informacao:
+   cada passo depende do anterior existir. */
+.passos { list-style: none; margin: 14px 0 0; padding: 0; }
+.passos li {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: 12px;
+  padding-bottom: 16px;
+  position: relative;
+}
+.passos li:last-child { padding-bottom: 0; }
+.passos li:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 12.5px; top: 27px; bottom: 4px;
+  width: 1px;
+  background: var(--border);
+}
+.passos__n {
+  width: 26px; height: 26px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--primaria);
+  background: var(--surface);
+  color: var(--primaria);
+  font-size: 12px; font-weight: 640;
+  font-variant-numeric: tabular-nums;
+  position: relative; z-index: 1;
+}
+.passos strong { font-size: 13.5px; }
+.passos p { margin: 2px 0 0; font-size: 12.5px; color: var(--texto-2); line-height: 1.55; }
+
+/* Os tres lancamentos do mes. O ponto colorido separa o que entra do que sai. */
+.tres { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 10px; }
+.tres li {
+  display: grid;
+  grid-template-columns: 9px 1fr;
+  gap: 11px;
+  align-items: start;
+  font-size: 12.5px;
+  color: var(--texto-2);
+  line-height: 1.55;
+}
+.tres__pt { width: 9px; height: 9px; border-radius: 50%; margin-top: 5px; }
+.tres__pt--entra { background: var(--ok); }
+.tres__pt--sai   { background: var(--erro); }
+.tres__pt--taxa  { background: var(--primaria); }
+
+/* FAQ com <details>: abre e fecha sem JavaScript e ja vem acessivel. */
+.faq { display: grid; gap: 0; }
+.faq__item { border-bottom: 1px solid var(--border); }
+.faq__item summary {
+  cursor: pointer;
+  padding: 15px 30px 15px 0;
+  font-size: 13.5px;
+  font-weight: 560;
+  list-style: none;
+  position: relative;
+  transition: color var(--transicao);
+}
+.faq__item summary::-webkit-details-marker { display: none; }
+.faq__item summary:hover { color: var(--primaria); }
+.faq__item summary::after {
+  content: "+";
+  position: absolute; right: 6px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 17px; font-weight: 400;
+  color: var(--texto-3);
+  line-height: 1;
+}
+.faq__item[open] summary::after { content: "\2212"; }
+.faq__item[open] summary { color: var(--primaria); }
+.faq__item p {
+  margin: 0;
+  padding: 0 40px 17px 0;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--texto-2);
+  max-width: 78ch;
+}
+
 /* ----------------------------------------------------------- ESTADOS -- */
 .vazio {
   display: flex; flex-direction: column; align-items: center;
