@@ -71,8 +71,16 @@ create index if not exists idx_imobiliarias_ativa on public.imobiliarias (ativa)
 alter table public.imobiliarias enable row level security;
 
 -- Codigo de acesso de 6 digitos.
--- gen_random_bytes (pgcrypto, ja instalado no 001) e nao random(): o codigo e
--- credencial de cadastro, precisa ser imprevisivel.
+--
+-- A entropia vem de gen_random_uuid(), e nao de random(): o codigo e credencial
+-- de cadastro e precisa ser imprevisivel. gen_random_uuid() e do proprio nucleo
+-- do Postgres (13+) e usa gerador criptografico.
+--
+-- Nao usar gen_random_bytes() do pgcrypto aqui: no Supabase as extensoes ficam
+-- no schema `extensions`, invisivel para o `set search_path = public` que estas
+-- funcoes precisam ter. Daria "function gen_random_bytes(integer) does not exist"
+-- so na hora de criar a primeira imobiliaria.
+--
 -- Faixa 100000..999999 - nunca comeca com zero, que some ao colar em planilha.
 create or replace function public.gerar_codigo_imobiliaria()
 returns char(6)
@@ -87,8 +95,8 @@ begin
   loop
     v_i := v_i + 1;
     v_codigo := lpad(
-      ((('x' || encode(gen_random_bytes(4), 'hex'))::bit(32)::bigint & 2147483647)
-        % 900000 + 100000)::text, 6, '0');
+      ((('x' || substr(replace(gen_random_uuid()::text, '-', ''), 1, 8))::bit(32)::bigint
+        & 2147483647) % 900000 + 100000)::text, 6, '0');
     exit when not exists (select 1 from public.imobiliarias where codigo = v_codigo);
     if v_i > 50 then
       raise exception 'Nao foi possivel gerar um codigo de acesso unico';
