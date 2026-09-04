@@ -172,6 +172,43 @@ export type ImovelFoto = {
   created_at: string
 }
 
+/**
+ * Tipos de documento aceitos. Espelha o check `documentos_tipo_valido` da
+ * migracao 006 -- se acrescentar um aqui, acrescente la tambem.
+ */
+export type TipoDocumento =
+  | 'vistoria'
+  | 'contrato_assinado'
+  | 'aditivo'
+  | 'identidade'
+  | 'comprovante_renda'
+  | 'matricula'
+  | 'outro'
+
+/**
+ * Arquivo anexado a um imovel, contrato ou cliente. Exatamente um dos tres
+ * vinculos e preenchido -- o check `documentos_um_vinculo` garante.
+ *
+ * O binario vive no bucket privado `documentos`; `path` e a chave la dentro, e
+ * so vira URL por meio de link assinado que expira.
+ */
+export type Documento = {
+  id: string
+  imobiliaria_id: string
+  tipo: TipoDocumento
+  titulo: string | null
+  observacoes: string | null
+  path: string
+  nome_arquivo: string
+  mime: string | null
+  tamanho: number | null
+  imovel_id: string | null
+  contrato_id: string | null
+  cliente_id: string | null
+  created_at: string
+  created_by: string | null
+}
+
 export type Cliente = Endereco & {
   id: string
   imobiliaria_id: string
@@ -400,6 +437,7 @@ export type Database = {
       proprietarios: TabelaTenant<Proprietario>
       imoveis: TabelaTenant<Imovel>
       imovel_fotos: TabelaTenant<ImovelFoto>
+      documentos: TabelaTenant<Documento>
       clientes: TabelaTenant<Cliente>
       contratos: TabelaTenant<Contrato>
       lancamentos: TabelaTenant<Lancamento>

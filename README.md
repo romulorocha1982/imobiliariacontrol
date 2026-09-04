@@ -58,6 +58,7 @@ distribuição da carteira, contratos vencendo e cobranças em atraso.
    | 4º | `supabase/migrations/004a_enum.sql` | **Rode sozinho.** Adiciona o cargo `super_admin` |
    | 5º | `supabase/migrations/004_multitenancy.sql` | Isolamento por imobiliária, RLS e views |
    | 6º | `supabase/migrations/005_integridade_tenant.sql` | Trava contra vínculo entre imobiliárias |
+   | 7º | `supabase/migrations/006_documentos.sql` | Tabela de anexos: vistoria, contrato assinado, RG |
 
    Cada um deve terminar com **Success. No rows returned**.
 
@@ -244,13 +245,15 @@ pendente. O painel já faz isso sozinho a cada abertura.
 ```
 ├── netlify.toml                 # build, redirect SPA e headers de segurança
 ├── supabase/
-│   ├── migrations/              # execute na ordem 001 → 002 → 003 → 004a → 004 → 005
+│   ├── migrations/              # ordem 001 → 002 → 003 → 004a → 004 → 005 → 006
 │   │   ├── 001_schema.sql       # tabelas, tipos, índices
 │   │   ├── 002_functions.sql    # triggers, auditoria, parcelas, views
 │   │   ├── 003_rls.sql          # permissões por cargo + storage
 │   │   ├── 004a_enum.sql        # cargo super_admin (rodar sozinho)
 │   │   ├── 004_multitenancy.sql # imobiliaria_id, RLS por tenant, views seguras
-│   │   └── 005_integridade_tenant.sql  # FKs compostas contra vínculo cruzado
+│   │   ├── 005_integridade_tenant.sql  # FKs compostas contra vínculo cruzado
+│   │   └── 006_documentos.sql   # anexos (vistoria, contrato assinado, RG)
+│   ├── diagnostico.sql          # consulta de leitura: até onde as migrações foram
 │   └── functions/
 │       └── gestao-contas/       # Edge Function: cria usuários (service_role)
 └── src/

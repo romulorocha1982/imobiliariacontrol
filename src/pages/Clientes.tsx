@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/contexts/ToastContext'
 import { Modal, Campo, Confirmar, Vazio, SkeletonTabela, BadgeCliente } from '@/components/ui'
+import { Anexos } from '@/components/Anexos'
 import {
   mascaraCpfCnpj, mascaraTelefone, mascaraCep, validarCpfCnpj, moeda, data,
 } from '@/lib/format'
@@ -29,6 +30,9 @@ export default function Clientes() {
   const [erros, setErros] = useState<Record<string, string>>({})
   const [excluir, setExcluir] = useState<Cliente | null>(null)
   const [excluindo, setExcluindo] = useState(false)
+
+  /** Aba do modal. Anexos precisam do id, entao so existem na edicao. */
+  const [aba, setAba] = useState<'dados' | 'anexos'>('dados')
 
   const podeEditar = pode('admin', 'gerente', 'corretor')
 
@@ -60,6 +64,7 @@ export default function Clientes() {
     setEditando(null)
     setForm(FORM_VAZIO)
     setErros({})
+    setAba('dados')
     setModal(true)
   }
 
@@ -67,6 +72,7 @@ export default function Clientes() {
     setEditando(c)
     setForm({ ...c })
     setErros({})
+    setAba('dados')
     setModal(true)
   }
 
@@ -236,16 +242,41 @@ export default function Clientes() {
         rodape={
           <>
             <button className="btn btn--secundario" onClick={() => setModal(false)} disabled={salvando}>
-              Cancelar
+              {aba === 'dados' ? 'Cancelar' : 'Fechar'}
             </button>
-            <button className="btn btn--primario" onClick={() => void salvar()} disabled={salvando}>
-              {salvando && <span className="spin spin--sm spin--claro" />}
-              {editando ? 'Salvar' : 'Cadastrar'}
-            </button>
+            {aba === 'dados' && (
+              <button className="btn btn--primario" onClick={() => void salvar()} disabled={salvando}>
+                {salvando && <span className="spin spin--sm spin--claro" />}
+                {editando ? 'Salvar' : 'Cadastrar'}
+              </button>
+            )}
           </>
         }
       >
-        <div className="form-grade">
+        {editando && (
+          <div className="abas">
+            <button
+              className={`aba ${aba === 'dados' ? 'aba--ativa' : ''}`}
+              onClick={() => setAba('dados')}
+            >
+              Dados
+            </button>
+            <button
+              className={`aba ${aba === 'anexos' ? 'aba--ativa' : ''}`}
+              onClick={() => setAba('anexos')}
+            >
+              Documentos
+            </button>
+          </div>
+        )}
+
+        {editando && aba === 'anexos' && (
+          <div className="form-grade">
+            <Anexos escopo="clientes" registroId={editando.id} tipoPadrao="identidade" />
+          </div>
+        )}
+
+        <div className="form-grade" hidden={aba !== 'dados'}>
           <div className="form-secao">Dados pessoais</div>
 
           <Campo rotulo="Nome completo" obrigatorio erro={erros.nome} className="col-8">

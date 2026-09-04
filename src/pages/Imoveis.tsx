@@ -7,6 +7,8 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/contexts/ToastContext'
 import { Modal, Campo, Confirmar, Vazio, BadgeImovel, SkeletonTabela } from '@/components/ui'
+import { Fotos } from '@/components/Fotos'
+import { Anexos } from '@/components/Anexos'
 import { moeda, mascaraCep, enderecoLinha } from '@/lib/format'
 import {
   LABEL_TIPO_IMOVEL, LABEL_FINALIDADE, LABEL_STATUS_IMOVEL, UF_LISTA,
@@ -55,6 +57,9 @@ export default function Imoveis() {
   const [excluir, setExcluir] = useState<ImovelCompleto | null>(null)
   const [excluindo, setExcluindo] = useState(false)
 
+  /** Aba do modal. Fotos e anexos precisam de um id, entao so existem na edicao. */
+  const [aba, setAba] = useState<'dados' | 'fotos' | 'anexos'>('dados')
+
   const podeEditar = pode('admin', 'gerente', 'corretor')
 
   const carregar = useCallback(async () => {
@@ -88,6 +93,7 @@ export default function Imoveis() {
     setEditando(null)
     setForm(FORM_VAZIO)
     setErros({})
+    setAba('dados')
     setModal(true)
   }
 
@@ -95,6 +101,7 @@ export default function Imoveis() {
     setEditando(i)
     setForm({ ...i })
     setErros({})
+    setAba('dados')
     setModal(true)
   }
 
@@ -314,16 +321,57 @@ export default function Imoveis() {
         rodape={
           <>
             <button className="btn btn--secundario" onClick={() => setModal(false)} disabled={salvando}>
-              Cancelar
+              {aba === 'dados' ? 'Cancelar' : 'Fechar'}
             </button>
-            <button className="btn btn--primario" onClick={() => void salvar()} disabled={salvando}>
-              {salvando && <span className="spin spin--sm spin--claro" />}
-              {editando ? 'Salvar alteracoes' : 'Cadastrar imovel'}
-            </button>
+            {/* Fotos e anexos gravam no ato; botao de salvar so faz sentido no
+                formulario, e mantido nas outras abas so confundiria. */}
+            {aba === 'dados' && (
+              <button className="btn btn--primario" onClick={() => void salvar()} disabled={salvando}>
+                {salvando && <span className="spin spin--sm spin--claro" />}
+                {editando ? 'Salvar alteracoes' : 'Cadastrar imovel'}
+              </button>
+            )}
           </>
         }
       >
-        <div className="form-grade">
+        {/* As abas de arquivo dependem do id do imovel, que so existe depois de
+            cadastrado. No "Novo imovel" o modal segue sendo so o formulario. */}
+        {editando && (
+          <div className="abas">
+            <button
+              className={`aba ${aba === 'dados' ? 'aba--ativa' : ''}`}
+              onClick={() => setAba('dados')}
+            >
+              Dados
+            </button>
+            <button
+              className={`aba ${aba === 'fotos' ? 'aba--ativa' : ''}`}
+              onClick={() => setAba('fotos')}
+            >
+              Fotos do anuncio
+            </button>
+            <button
+              className={`aba ${aba === 'anexos' ? 'aba--ativa' : ''}`}
+              onClick={() => setAba('anexos')}
+            >
+              Vistoria e documentos
+            </button>
+          </div>
+        )}
+
+        {editando && aba === 'fotos' && (
+          <div className="form-grade">
+            <Fotos imovelId={editando.id} />
+          </div>
+        )}
+
+        {editando && aba === 'anexos' && (
+          <div className="form-grade">
+            <Anexos escopo="imoveis" registroId={editando.id} tipoPadrao="vistoria" />
+          </div>
+        )}
+
+        <div className="form-grade" hidden={aba !== 'dados'}>
           <div className="form-secao">Identificacao</div>
 
           <Campo rotulo="Titulo do anuncio" obrigatorio erro={erros.titulo} className="col-6">

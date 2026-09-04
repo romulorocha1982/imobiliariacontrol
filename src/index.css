@@ -191,6 +191,12 @@
 
 * { margin: 0; }
 
+/* O `display:none` que o navegador aplica ao atributo `hidden` tem
+   especificidade baixa e qualquer `display` de classe o vence -- inclusive o
+   `display:grid` da .form-grade. Sem esta regra, esconder um elemento com
+   `hidden` simplesmente nao funciona. */
+[hidden] { display: none !important; }
+
 html, body, #root { height: 100%; }
 
 body {
@@ -873,6 +879,53 @@ button, input, select, textarea { font: inherit; color: inherit; }
   font-variant-numeric: tabular-nums;
 }
 .imovel-card__valor small { font-size: 11.5px; font-weight: 500; color: var(--texto-3); }
+
+/* ----------------------------------------------------------- GALERIA -- */
+/* Grade das fotos do imovel, dentro do modal. auto-fill com minmax deixa a
+   quantidade de colunas seguir a largura, sem media query. */
+.galeria {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+.galeria__item {
+  position: relative;
+  margin: 0;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--r);
+  overflow: hidden;
+  background: var(--surface-3);
+  border: 2px solid transparent;
+}
+.galeria__item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.galeria__item--capa { border-color: var(--primaria); }
+
+.galeria__capa {
+  position: absolute; top: 6px; left: 6px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--primaria);
+  color: #fff;
+  font-size: 10.5px; font-weight: 620;
+  letter-spacing: .03em;
+}
+
+/* As acoes so aparecem no hover para nao competir com a foto. Em toque nao ha
+   hover, entao ficam sempre visiveis abaixo de 900px. */
+.galeria__acoes {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  display: flex; justify-content: center; gap: 2px;
+  padding: 4px;
+  background: linear-gradient(to top, rgba(0, 0, 0, .72), transparent);
+  opacity: 0;
+  transition: opacity var(--transicao);
+}
+.galeria__item:hover .galeria__acoes,
+.galeria__item:focus-within .galeria__acoes { opacity: 1; }
+
+@media (max-width: 900px) {
+  .galeria__acoes { opacity: 1; }
+}
 
 /* ----------------------------------------------------------- ESTADOS -- */
 .vazio {
