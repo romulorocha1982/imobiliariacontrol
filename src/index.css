@@ -579,7 +579,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .col-12 { grid-column: span 12; }
 .col-9  { grid-column: span 9; }
 .col-8  { grid-column: span 8; }
+.col-7  { grid-column: span 7; }
 .col-6  { grid-column: span 6; }
+.col-5  { grid-column: span 5; }
 .col-4  { grid-column: span 4; }
 .col-3  { grid-column: span 3; }
 .col-2  { grid-column: span 2; }
@@ -1032,7 +1034,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
   .conteudo { padding: 15px; }
   .topo { padding: 0 15px; }
 
-  .col-9, .col-8, .col-6, .col-4, .col-3, .col-2 { grid-column: span 12; }
+  .col-9, .col-8, .col-7, .col-6, .col-5, .col-4, .col-3, .col-2 { grid-column: span 12; }
 }
 
 @media (max-width: 620px) {
