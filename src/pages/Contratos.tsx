@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Plus, Search, FileText, Pencil, Trash2, Receipt, AlertTriangle, CheckCircle2,
+  FileSignature,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/contexts/ToastContext'
 import { Modal, Campo, Confirmar, Vazio, SkeletonTabela, BadgeContrato } from '@/components/ui'
 import { Anexos } from '@/components/Anexos'
+import { GerarContrato } from '@/components/GerarContrato'
 import { moeda, data } from '@/lib/format'
 import {
   LABEL_STATUS_CONTRATO, LABEL_GARANTIA,
@@ -62,6 +64,9 @@ export default function Contratos() {
 
   /** Aba do modal. Anexos precisam do id, entao so existem na edicao. */
   const [aba, setAba] = useState<'dados' | 'anexos'>('dados')
+
+  /** Contrato cuja minuta esta sendo gerada, ou null. */
+  const [gerandoDoc, setGerandoDoc] = useState<ContratoCompleto | null>(null)
 
   const podeEditar = pode('admin', 'gerente', 'financeiro')
 
@@ -342,6 +347,13 @@ export default function Contratos() {
                         title="Gerar parcelas no financeiro"
                       >
                         {gerando === c.id ? <span className="spin spin--sm" /> : <Receipt size={13} />}
+                      </button>
+                      <button
+                        className="btn btn--fantasma btn--sm"
+                        onClick={() => setGerandoDoc(c)}
+                        title="Gerar o contrato em PDF"
+                      >
+                        <FileSignature size={13} />
                       </button>
                       <button className="btn btn--fantasma btn--sm" onClick={() => abrirEdicao(c)} title="Editar">
                         <Pencil size={13} />
@@ -638,6 +650,12 @@ export default function Contratos() {
         processando={excluindo}
         aoConfirmar={() => void confirmarExclusao()}
         aoCancelar={() => setExcluir(null)}
+      />
+
+      <GerarContrato
+        aberto={Boolean(gerandoDoc)}
+        aoFechar={() => setGerandoDoc(null)}
+        contrato={gerandoDoc}
       />
     </div>
   )

@@ -119,6 +119,22 @@ create policy "modelos_write" on public.modelos_contrato
   );
 
 
+-- -----------------------------------------------------------------------------
+-- TIPO NOVO DE DOCUMENTO: MINUTA
+--
+-- O contrato gerado e ainda nao assinado nao e `contrato_assinado`, e jogar em
+-- `outro` o perderia no meio dos anexos. Este e o motivo de `tipo` ser text com
+-- check e nao enum: acrescentar valor e um par de comandos num arquivo so, em
+-- vez do transtorno que o 004a_enum.sql documenta.
+-- -----------------------------------------------------------------------------
+alter table public.documentos drop constraint if exists documentos_tipo_valido;
+
+alter table public.documentos add constraint documentos_tipo_valido check (
+  tipo in ('minuta','vistoria','contrato_assinado','aditivo','identidade',
+           'comprovante_renda','matricula','outro')
+);
+
+
 -- =============================================================================
 -- VERIFICACAO
 --

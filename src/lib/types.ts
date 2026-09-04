@@ -216,6 +216,8 @@ export type SincronizacaoParcelas = {
  * migracao 006 -- se acrescentar um aqui, acrescente la tambem.
  */
 export type TipoDocumento =
+  /** Contrato gerado e ainda nao assinado. */
+  | 'minuta'
   | 'vistoria'
   | 'contrato_assinado'
   | 'aditivo'

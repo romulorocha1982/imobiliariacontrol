@@ -61,6 +61,7 @@ distribuição da carteira, contratos vencendo e cobranças em atraso.
    | 7º | `supabase/migrations/006_documentos.sql` | Tabela de anexos: vistoria, contrato assinado, RG |
    | 8º | `supabase/migrations/007_sincronizar_parcelas.sql` | Gerar parcelas passa a sincronizar com o contrato |
    | 9º | `supabase/migrations/008_resultado_imovel.sql` | Quem arcou com a despesa e resultado por imóvel |
+   | 10º | `supabase/migrations/009_modelos_contrato.sql` | Modelos de contrato com cláusulas editáveis |
 
    Cada um deve terminar com **Success. No rows returned**.
 
@@ -247,7 +248,7 @@ pendente. O painel já faz isso sozinho a cada abertura.
 ```
 ├── netlify.toml                 # build, redirect SPA e headers de segurança
 ├── supabase/
-│   ├── migrations/              # ordem 001 → 002 → 003 → 004a → 004 → 005 → 006 → 007 → 008
+│   ├── migrations/              # ordem 001 → … → 007 → 008 → 009
 │   │   ├── 001_schema.sql       # tabelas, tipos, índices
 │   │   ├── 002_functions.sql    # triggers, auditoria, parcelas, views
 │   │   ├── 003_rls.sql          # permissões por cargo + storage
@@ -256,7 +257,8 @@ pendente. O painel já faz isso sozinho a cada abertura.
 │   │   ├── 005_integridade_tenant.sql  # FKs compostas contra vínculo cruzado
 │   │   ├── 006_documentos.sql   # anexos (vistoria, contrato assinado, RG)
 │   │   ├── 007_sincronizar_parcelas.sql  # parcelas seguem o contrato editado
-│   │   └── 008_resultado_imovel.sql  # arcado_por + rentabilidade por imovel
+│   │   ├── 008_resultado_imovel.sql  # arcado_por + rentabilidade por imovel
+│   │   └── 009_modelos_contrato.sql  # modelos e clausulas para gerar contrato
 │   ├── diagnostico.sql          # consulta de leitura: até onde as migrações foram
 │   └── functions/
 │       └── gestao-contas/       # Edge Function: cria usuários (service_role)

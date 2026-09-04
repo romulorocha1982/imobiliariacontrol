@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Building2, Users, UserRound, FileText, Wallet,
   Target, ShieldCheck, ScrollText, LogOut, Menu, Sun, Moon, Home, Landmark,
-  KeyRound, LifeBuoy,
+  KeyRound, LifeBuoy, FileSignature,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { LABEL_CARGO, type UserRole } from '@/lib/types'
@@ -33,6 +33,8 @@ const MENU: ItemMenu[] = [
     cargos: ['admin'] },
   { para: '/auditoria',     rotulo: 'Auditoria',     icone: <ScrollText size={17} />,  grupo: 'Administracao',
     cargos: ['admin', 'gerente'] },
+  { para: '/modelos',       rotulo: 'Modelos de contrato', icone: <FileSignature size={17} />,
+    grupo: 'Administracao', cargos: ['admin', 'gerente'] },
 
   // Fica por ultimo de proposito: ajuda se procura quando ja se esta perdido,
   // e o fim do menu e onde a mao vai. Vale para todos os cargos.
@@ -54,6 +56,7 @@ const TITULOS: Record<string, { titulo: string; sub: string }> = {
   '/crm':           { titulo: 'CRM / Funil',        sub: 'Negociacoes em andamento' },
   '/usuarios':      { titulo: 'Usuarios',           sub: 'Equipe e permissoes' },
   '/auditoria':     { titulo: 'Auditoria',          sub: 'Historico de alteracoes' },
+  '/modelos':       { titulo: 'Modelos de contrato', sub: 'Clausulas que o sistema usa para gerar o contrato' },
   '/ajuda':         { titulo: 'Como usar o sistema', sub: 'Guia rapido e perguntas frequentes' },
   '/admin/imobiliarias': { titulo: 'Imobiliarias',  sub: 'Contas atendidas pela plataforma' },
 }

@@ -32,6 +32,7 @@ export const MIME_IMAGEM = ['image/jpeg', 'image/png', 'image/webp', 'image/heic
 export const MIME_DOCUMENTO = [...MIME_IMAGEM, 'application/pdf']
 
 export const ROTULO_TIPO: Record<TipoDocumento, string> = {
+  minuta: 'Minuta de contrato',
   vistoria: 'Vistoria',
   contrato_assinado: 'Contrato assinado',
   aditivo: 'Aditivo',

@@ -15,6 +15,7 @@ import Usuarios from '@/pages/Usuarios'
 import Auditoria from '@/pages/Auditoria'
 import AdminImobiliarias from '@/pages/AdminImobiliarias'
 import Ajuda from '@/pages/Ajuda'
+import Modelos from '@/pages/Modelos'
 import { Carregando, Vazio } from '@/components/ui'
 import { ShieldAlert, PlugZap, PauseCircle } from 'lucide-react'
 
@@ -153,6 +154,16 @@ export default function App() {
           element={
             <Restrito cargos={['admin', 'gerente']}>
               <Auditoria />
+            </Restrito>
+          }
+        />
+        {/* Espelha a RLS de modelos_contrato: clausula e decisao juridica da
+            casa, nao operacao de rotina. */}
+        <Route
+          path="/modelos"
+          element={
+            <Restrito cargos={['admin', 'gerente']}>
+              <Modelos />
             </Restrito>
           }
         />
