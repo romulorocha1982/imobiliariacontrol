@@ -9,6 +9,7 @@ import { useToast } from '@/contexts/ToastContext'
 import { Modal, Campo, Confirmar, Vazio, BadgeImovel, SkeletonTabela } from '@/components/ui'
 import { Fotos } from '@/components/Fotos'
 import { Anexos } from '@/components/Anexos'
+import { ResultadoImovel } from '@/components/ResultadoImovel'
 import { moeda, mascaraCep, enderecoLinha } from '@/lib/format'
 import {
   LABEL_TIPO_IMOVEL, LABEL_FINALIDADE, LABEL_STATUS_IMOVEL, UF_LISTA,
@@ -57,8 +58,9 @@ export default function Imoveis() {
   const [excluir, setExcluir] = useState<ImovelCompleto | null>(null)
   const [excluindo, setExcluindo] = useState(false)
 
-  /** Aba do modal. Fotos e anexos precisam de um id, entao so existem na edicao. */
-  const [aba, setAba] = useState<'dados' | 'fotos' | 'anexos'>('dados')
+  /** Aba do modal. Fotos, anexos e resultado precisam de um id, entao so
+   *  existem na edicao. */
+  const [aba, setAba] = useState<'dados' | 'fotos' | 'anexos' | 'resultado'>('dados')
 
   const podeEditar = pode('admin', 'gerente', 'corretor')
 
@@ -356,6 +358,18 @@ export default function Imoveis() {
             >
               Vistoria e documentos
             </button>
+            <button
+              className={`aba ${aba === 'resultado' ? 'aba--ativa' : ''}`}
+              onClick={() => setAba('resultado')}
+            >
+              Resultado do ano
+            </button>
+          </div>
+        )}
+
+        {editando && aba === 'resultado' && (
+          <div className="form-grade">
+            <ResultadoImovel imovelId={editando.id} />
           </div>
         )}
 

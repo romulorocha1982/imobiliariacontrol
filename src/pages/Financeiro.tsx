@@ -11,10 +11,19 @@ import {
 } from '@/components/ui'
 import { moeda, moedaCurta, data, competencia, hoje } from '@/lib/format'
 import {
-  LABEL_CATEGORIA, LABEL_STATUS_LANCAMENTO,
+  LABEL_CATEGORIA, LABEL_STATUS_LANCAMENTO, LABEL_ARCADO_POR,
   type LancamentoCompleto, type Lancamento, type Cliente, type Proprietario,
   type Imovel, type LancamentoTipo, type LancamentoCategoria, type LancamentoStatus,
+  type ArcadoPor,
 } from '@/lib/types'
+
+/**
+ * Categorias em que "quem arcou" muda o resultado do imovel. Repasse e taxa
+ * ficam de fora: sao movimento da propria administracao, nao custo de alguem.
+ */
+const CATEGORIAS_DE_CUSTO: LancamentoCategoria[] = [
+  'manutencao', 'iptu', 'condominio', 'multa_juros', 'outros',
+]
 
 type Form = Partial<Lancamento>
 type Aba = 'receber' | 'pagar' | 'todos'
@@ -465,12 +474,32 @@ export default function Financeiro() {
             </select>
           </Campo>
 
+          {/* So aparece onde muda alguma coisa: numa despesa de custo. Numa
+              receita ou num repasse, o campo seria ruido. */}
+          {form.tipo === 'despesa' && CATEGORIAS_DE_CUSTO.includes(form.categoria ?? 'outros') && (
+            <Campo
+              rotulo="Quem arcou"
+              className="col-6"
+              dica="Define de quem e o custo no resultado do imovel."
+            >
+              <select
+                className="select"
+                value={form.arcado_por ?? 'proprietario'}
+                onChange={(e) => set('arcado_por', e.target.value as ArcadoPor)}
+              >
+                {Object.entries(LABEL_ARCADO_POR).map(([v, l]) => (
+                  <option key={v} value={v}>{l}</option>
+                ))}
+              </select>
+            </Campo>
+          )}
+
           <Campo rotulo="Descricao" obrigatorio erro={erros.descricao} className="col-12">
             <input
               className={`input ${erros.descricao ? 'input--erro' : ''}`}
               value={form.descricao ?? ''}
               onChange={(e) => set('descricao', e.target.value)}
-              placeholder="Aluguel 09/2026 - contrato CT-2026-0001"
+              placeholder="Infiltracao no banheiro - reparo hidraulico"
             />
           </Campo>
 

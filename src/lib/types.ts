@@ -302,9 +302,49 @@ export type Lancamento = {
   cliente_id: string | null
   proprietario_id: string | null
   observacoes: string | null
+  /** Quem suportou o custo. So faz sentido em despesa de manutencao, IPTU,
+   *  condominio e outros -- repasse e taxa sao movimento da propria
+   *  administracao. */
+  arcado_por: ArcadoPor
   created_at: string
   updated_at: string
   created_by: string | null
+}
+
+export type ArcadoPor = 'proprietario' | 'imobiliaria' | 'inquilino'
+
+export const LABEL_ARCADO_POR: Record<ArcadoPor, string> = {
+  proprietario: 'Proprietario',
+  imobiliaria: 'Imobiliaria',
+  inquilino: 'Inquilino',
+}
+
+/**
+ * Retorno de `resultado_imovel`. Duas leituras do mesmo ano, porque sao
+ * perguntas diferentes: a do dono ("esse imovel vale a pena?") e a da
+ * administracao ("administrar esse imovel da lucro?").
+ */
+export type ResultadoImovel = {
+  ano: number
+  proprietario: { repasse: number; custos: number; resultado: number }
+  imobiliaria: {
+    aluguel: number
+    repasse: number
+    comissao: number
+    custos: number
+    resultado: number
+  }
+  /** Informativo. Nao entra em nenhuma das duas contas -- a taxa e retida no
+   *  repasse, entao aquela linha quase nunca fica com status pago. */
+  taxa_registrada: number
+  manutencao: number
+  aberto: { a_receber: number; a_pagar: number }
+  categorias: {
+    categoria: LancamentoCategoria
+    tipo: LancamentoTipo
+    total: number | null
+    em_aberto: number | null
+  }[]
 }
 
 /** Linha da view vw_lancamentos_completo */
@@ -507,6 +547,10 @@ export type Database = {
       marcar_atrasados: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      resultado_imovel: {
+        Args: { p_imovel_id: string; p_ano: number }
+        Returns: ResultadoImovel
       }
       baixar_lancamento: {
         Args: { p_id: string; p_valor?: number; p_data?: string; p_forma?: string }

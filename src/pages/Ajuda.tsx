@@ -117,6 +117,16 @@ const FAQ: Pergunta[] = [
     tags: 'atraso inadimplencia cobranca vencido financeiro',
   },
   {
+    p: 'Onde lanco uma manutencao, como infiltracao ou pintura',
+    r: 'Em Financeiro, Novo lancamento: tipo Despesa, categoria Manutencao, e vincule o imovel. Escolha tambem quem arcou com o custo (proprietario, imobiliaria ou inquilino) - e isso que separa o prejuizo de quem na hora de apurar o resultado.',
+    tags: 'manutencao despesa infiltracao pintura reparo conserto obra imovel custo',
+  },
+  {
+    p: 'Como vejo se um imovel deu lucro no ano',
+    r: 'Abra o imovel e va na aba Resultado do ano. Ele mostra duas leituras: a do proprietario (repasses recebidos menos os custos que ele arcou) e a da imobiliaria (recebido dos inquilinos menos o repassado, mais comissao, menos os custos absorvidos). So conta o que ja foi pago; o previsto aparece a parte.',
+    tags: 'lucro resultado rentabilidade imovel ano retorno apurar balanco',
+  },
+  {
     p: 'Preciso saber quem alterou um cadastro',
     r: 'A tela Auditoria registra toda criacao, alteracao e exclusao, com o antes e o depois campo a campo. Ninguem edita nem apaga esse historico, nem o administrador.',
     tags: 'auditoria historico alteracao quem mudou log',
